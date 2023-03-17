@@ -1,7 +1,9 @@
 {
+    "name": "bileslav/three1911s-phptest",
+    "type": "phptest",
     "autoload": {
         "psr-4": {
-            "_3c\\Phptest\\": "src/"
+            "bileslav\\Three1911s\\Phptest\\": "src/"
         }
     },
     "require-dev": {

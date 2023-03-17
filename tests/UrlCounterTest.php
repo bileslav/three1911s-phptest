@@ -1,19 +1,19 @@
 <?php
 declare (strict_types = 1);
 
-namespace _3c\Phptest;
+namespace bileslav\Three1911s\Phptest;
 
 use PHPUnit\Framework\TestCase;
 
 final class UrlCounterTest extends TestCase
 {
 	private const URLS = [
-		'example',
-		'ftp://127.0.0.1',
 		'https://www.example.com',
 		'http://example.net:80',
 		'HTTP://EXAmPle.Net/',
 		'https://mail.example.net',
+		'example',
+		'ftp://127.0.0.1',
 	];
 
 	public function testCountUniqueUrls(): void
@@ -30,9 +30,9 @@ final class UrlCounterTest extends TestCase
 		$counts = $counter->countUniqueUrlsPerTopLevelDomain(self::URLS);
 
 		$this->assertSame([
-			'' => 2,
 			'example.com' => 1,
 			'example.net' => 2,
+			UrlCounter::NOT_A_DOMAIN => 2,
 		], $counts);
 	}
 }

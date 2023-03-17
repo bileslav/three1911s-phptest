@@ -1,11 +1,11 @@
-# 3c PHP hiring test
+# PHP Developer Hiring Test
 
 Apart from related things, this repository contains my implementation of the following class:
 
 ```php
 <?php
 
-namespace _3c\Phptest;
+namespace Three1911s\Phptest;
 
 class UrlCounter
 {
@@ -52,7 +52,7 @@ class UrlCounter
 	/**
 	 * This function counts how many unique normalized valid URLs were passed to the function per top level domain
 	 *
-	 * A top level domain is a domain in the form of example.com. Assume all top level domains end in .com
+	 * A top level domain is a domain in the form of example.com.
 	 * subdomain.example.com is not a top level domain.
 	 *
 	 * Accepts a list of URLs

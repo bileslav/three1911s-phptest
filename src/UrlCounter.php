@@ -1,16 +1,18 @@
 <?php
 declare (strict_types = 1);
 
-namespace _3c\Phptest;
+namespace bileslav\Three1911s\Phptest;
 
 final class UrlCounter
 {
+	public const NOT_A_DOMAIN = '';
+
 	/**
 	 * This function counts how many unique
 	 * normalized valid URLs were passed to the function.
 	 *
 	 * @param string[] $urls
-	 * @throws UrlMalformedException
+	 * @throws MalformedUrlException
 	 */
 	public function countUniqueUrls(array $urls): int
 	{
@@ -25,7 +27,7 @@ final class UrlCounter
 	 *
 	 * @param string[] $urls
 	 * @return array<string, int>
-	 * @throws UrlMalformedException
+	 * @throws MalformedUrlException
 	 */
 	public function countUniqueUrlsPerTopLevelDomain(array $urls): array
 	{
@@ -33,7 +35,8 @@ final class UrlCounter
 
 		foreach ($urls as $url) {
 			$url = (new Url($url))->normalize();
-			$result[$url->getRootDomain() ?? ''][] = $url->toString();
+			$domain = $url->getRootDomain() ?? self::NOT_A_DOMAIN;
+			$result[$domain][] = $url->toString();
 		}
 
 		$result = array_map('array_unique', $result);

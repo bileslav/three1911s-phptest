@@ -1,7 +1,7 @@
 <?php
 declare (strict_types = 1);
 
-namespace _3c\Phptest;
+namespace bileslav\Three1911s\Phptest;
 
 use PHPUnit\Framework\TestCase;
 
@@ -12,9 +12,9 @@ final class UrlTest extends TestCase
 		'/blog/urls.html?q=s&q2=a+b;q3=sp%0Ace#top'
 	);
 
-	public function testMalformed(): void
+	public function testMalformedUrl(): void
 	{
-		$this->expectException(UrlMalformedException::class);
+		$this->expectException(MalformedUrlException::class);
 
 		new Url('http://localhost:65536');
 	}
@@ -40,14 +40,17 @@ final class UrlTest extends TestCase
 	public static function getNormalizationTestCases(): iterable
 	{
 		foreach ([
-			self::LONG_URL => 'https://www.netmeister.org/blog/urls.html',
+
+			self::LONG_URL => 'https://www.netmeister.org/blog/urls.html?q=s&q2=a%20b%3Bq3%3Dsp%0Ace',
 
 			'http://www.example.com/%7Efoo' => 'http://www.example.com/~foo',
 			'http://www.example.com/foo%2a' => 'http://www.example.com/foo%2A',
 
 			'http://example.org/../a/.././p%61th' => 'http://example.org/path',
 			'http://example.org/foo/./bar/BAZ/../QUX' => 'http://example.org/foo/bar/QUX',
-			'http://example.org/path?k=v#f' => 'http://example.org/path',
+
+			'http://example.org/path?k=v#f' => 'http://example.org/path?k=v',
+			'http://example.org/path/?b=2&a=1' => 'http://example.org/path/?a=1&b=2',
 
 			'https://Example.NET:443' => 'https://example.net/',
 			'TCP://127.0.0.1:443/app?' => 'tcp://127.0.0.1:443/app',
@@ -55,11 +58,12 @@ final class UrlTest extends TestCase
 			'http://Example.NET:80' => 'http://example.net/',
 			'TCP://127.0.0.1:80/app?' => 'tcp://127.0.0.1:80/app',
 
-			'urn:?#' => 'urn:',
+			'example' => 'example',
+			'//example.com/' => '//example.com/',
 			'file:///myfile' => 'file:/myfile',
 			'udp://LOCALHOST' => 'udp://localhost/',
-			'//example.com/' => '//example.com/',
-			'example' => 'example',
+			'urn:?#' => 'urn:',
+
 		] as $input => $output) {
 			yield [$input, $output];
 		}

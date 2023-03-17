@@ -1,7 +1,7 @@
 <?php
 declare (strict_types = 1);
 
-namespace _3c\Phptest;
+namespace bileslav\Three1911s\Phptest;
 
 final class Url
 {
@@ -15,14 +15,14 @@ final class Url
 	private ?string $fragment = null;
 
 	/**
-	 * @throws UrlMalformedException
+	 * @throws MalformedUrlException
 	 */
 	public function __construct(string $url)
 	{
 		$components = parse_url($url);
 
 		if ($components === false) {
-			throw new UrlMalformedException($url);
+			throw new MalformedUrlException($url);
 		}
 
 		foreach ($components as $component => $value) {
@@ -31,21 +31,19 @@ final class Url
 	}
 
 	/**
-	 * As per the intent, this method assumes none of the URLs
-	 * have `user`, `pass`, and `query` components.
+	 * As per the intent, this method assumes none
+	 * of the URLs have authentication information.
 	 */
 	public function normalize(): self
 	{
 		$that = clone $this;
 
-		$that->user = null;
-		$that->pass = null;
-		$that->query = null;
-		$that->fragment = null;
-
 		if ($that->scheme !== null) {
 			$that->scheme = strtolower($that->scheme);
 		}
+
+		$that->user = null;
+		$that->pass = null;
 
 		if ($that->host !== null) {
 			$that->host = strtolower($that->host);
@@ -68,6 +66,20 @@ final class Url
 		} else if ($that->getAuthority() !== null) {
 			$that->path = '/';
 		}
+
+		if ($that->query === '') {
+			$that->query = null;
+		} else if ($that->query !== null) {
+			parse_str($that->query, $query);
+			ksort($query);
+
+			$that->query = http_build_query(
+				$query,
+				encoding_type: PHP_QUERY_RFC3986,
+			);
+		}
+
+		$that->fragment = null;
 
 		return $that;
 	}
