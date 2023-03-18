@@ -5,6 +5,11 @@ namespace bileslav\Three1911s\Phptest;
 
 final class Url
 {
+	private const DEFAULT_PORTS = [
+		'http' => 80,
+		'https' => 443,
+	];
+
 	private ?string $scheme = null;
 	private ?string $user = null;
 	private ?string $pass = null;
@@ -33,55 +38,123 @@ final class Url
 	/**
 	 * As per the intent, this method assumes none
 	 * of the URLs have authentication information.
+	 *
+	 * @return self new normalized `Url` instance
 	 */
 	public function normalize(): self
 	{
-		$that = clone $this;
+		$url = clone $this;
 
-		if ($that->scheme !== null) {
-			$that->scheme = strtolower($that->scheme);
+		$url->lowercaseScheme();
+		$url->removeUserinfo();
+		$url->lowercaseHost();
+		$url->removePortIfDefault();
+		$url->normalizePath();
+		$url->sortQueryAndUseRfc3986();
+		$url->removeQueryIfEmpty();
+		$url->removeFragment();
+
+		return $url;
+	}
+
+	private function lowercaseScheme(): void
+	{
+		if ($this->scheme === null) {
+			return;
 		}
 
-		$that->user = null;
-		$that->pass = null;
+		$this->scheme = strtolower($this->scheme);
+	}
 
-		if ($that->host !== null) {
-			$that->host = strtolower($that->host);
+	private function removeUserinfo(): void
+	{
+		$this->user = null;
+		$this->pass = null;
+	}
+
+	private function lowercaseHost(): void
+	{
+		if ($this->host === null) {
+			return;
 		}
 
+		$this->host = strtolower($this->host);
+	}
+
+	private function removePortIfDefault(): void
+	{
 		if (
-			$that->port === 80 && $that->scheme === 'http' ||
-			$that->port === 443 && $that->scheme === 'https'
+			array_key_exists($this->scheme, self::DEFAULT_PORTS) &&
+			$this->port === self::DEFAULT_PORTS[$this->scheme]
 		) {
-			$that->port = null;
+			$this->port = null;
+		}
+	}
+
+	private function normalizePath(): void
+	{
+		if ($this->path !== null) {
+			$this->reencodePath();
+			$this->removeDotSegments();
+		} else if ($this->getAuthority() !== null) {
+			$this->path = '/';
+		}
+	}
+
+	private function reencodePath(): void
+	{
+		$path = explode('/', $this->path);
+
+		$path = array_map('rawurldecode', $path);
+		$path = array_map('rawurlencode', $path);
+
+		$this->path = implode('/', $path);
+	}
+
+	private function removeDotSegments(): void
+	{
+		$path = [];
+
+		foreach (explode('/', $this->path) as $segment) {
+			if ($segment === '.') {
+				continue;
+			}
+
+			if ($segment !== '..') {
+				$path[] = $segment;
+			} else if ($path !== ['']) {
+				array_pop($path);
+			}
 		}
 
-		if ($that->path !== null) {
-			$path = explode('/', $that->path);
-			$path = array_map('rawurldecode', $path);
-			$path = array_map('rawurlencode', $path);
-			$path = implode('/', $path);
+		$this->path = implode('/', $path);
+	}
 
-			$that->path = self::realpath($path);
-		} else if ($that->getAuthority() !== null) {
-			$that->path = '/';
+	private function removeQueryIfEmpty(): void
+	{
+		if ($this->query === '') {
+			$this->query = null;
+		}
+	}
+
+	private function sortQueryAndUseRfc3986(): void
+	{
+		if ($this->query === null) {
+			return;
 		}
 
-		if ($that->query === '') {
-			$that->query = null;
-		} else if ($that->query !== null) {
-			parse_str($that->query, $query);
-			ksort($query);
+		parse_str($this->query, $query);
+		ksort($query);
 
-			$that->query = http_build_query(
-				$query,
-				encoding_type: PHP_QUERY_RFC3986,
-			);
-		}
+		$this->query = http_build_query(
+			$query,
+			encoding_type: PHP_QUERY_RFC3986,
+		);
+	}
 
-		$that->fragment = null;
-
-		return $that;
+	private function removeFragment(): void
+	{
+		$this->fragment = null;
 	}
 
 	private function getAuthority(): ?string
@@ -107,17 +180,22 @@ final class Url
 
 	public function getRootDomain(): ?string
 	{
-		if ($this->host === null || self::isIp($this->host)) {
+		$host = $this->host;
+
+		if ($host === null || self::isIp($host)) {
 			return null;
 		}
 
-		$domain = explode('.', $this->host);
-		$domain = array_reverse($domain);
-		$domain = array_slice($domain, 0, 2);
-		$domain = array_reverse($domain);
-		$domain = implode('.', $domain);
+		$host = explode('.', $host);
+		$host = array_slice($host, -2, 2);
+		$host = implode('.', $host);
 
-		return $domain;
+		return $host;
+	}
+
+	private static function isIp(string $data): bool
+	{
+		return filter_var($data, FILTER_VALIDATE_IP) !== false;
 	}
 
 	public function toString(): string
@@ -136,36 +214,13 @@ final class Url
 		return $this->toString();
 	}
 
-	private static function isIp(string $data): bool
-	{
-		return filter_var($data, FILTER_VALIDATE_IP) !== false;
-	}
-
-	private static function sprintf(string $format, string|int|null $value): string
+	private static function sprintf(string $format,
+		string|int|null $value): string
 	{
 		if ($value === null) {
 			return '';
 		}
 
 		return sprintf($format, $value);
-	}
-
-	private static function realpath(string $path): string
-	{
-		$absolutes = [];
-
-		foreach (explode('/', $path) as $part) {
-			if ($part === '.') {
-				continue;
-			}
-
-			if ($part !== '..') {
-				$absolutes[] = $part;
-			} else if (count($absolutes) > 1) {
-				array_pop($absolutes);
-			}
-		}
-
-		return implode('/', $absolutes);
 	}
 }

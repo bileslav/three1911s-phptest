@@ -41,6 +41,9 @@ final class UrlTest extends TestCase
 	{
 		foreach ([
 
+			// Additional rationale: https://www.rfc-editor.org/rfc/rfc8089#appendix-A
+			'file:///myfile' => 'file:/myfile',
+
 			self::LONG_URL => 'https://www.netmeister.org/blog/urls.html?q=s&q2=a%20b%3Bq3%3Dsp%0Ace',
 
 			'http://www.example.com/%7Efoo' => 'http://www.example.com/~foo',
@@ -60,7 +63,6 @@ final class UrlTest extends TestCase
 
 			'example' => 'example',
 			'//example.com/' => '//example.com/',
-			'file:///myfile' => 'file:/myfile',
 			'udp://LOCALHOST' => 'udp://localhost/',
 			'urn:?#' => 'urn:',
 

@@ -7,6 +7,8 @@ Apart from related things, this repository contains my implementation of the fol
 
 namespace Three1911s\Phptest;
 
+// Do not add any libraries to the composer.json file.
+
 class UrlCounter
 {
 	/**
